@@ -1,0 +1,11 @@
+extends ../node_modules/jade-bootstrap/_bootstrap
+
+block body
+	+navbar(title, "dropdown_menu")
+		+nav_item("/", "active") Home
+	
+	.container
+		h1= title
+		
+		.container
+			p Welcome to #{title}.
