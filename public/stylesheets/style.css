@@ -1,8 +1,38 @@
 body {
-  padding: 50px;
-  font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+    font-family: "Calibri", "Verdana", "Arial";
 }
 
-a {
-  color: #00B7FF;
+div.navContainer {
+    margin-bottom: 20px;
+}
+
+/* BROWSING */
+p.browse {
+    font-size: 10pt;
+    margin-bottom: 0;
+}
+
+a.browse {
+    font-size: 10pt;
+}
+
+/* SEARCH RESULTS */
+p.searchResult {
+    font-size: 10pt;
+    margin-bottom: 20px;
+}
+
+a.searchResult {
+    font-size: 13pt;
+    font-weight: bold;
+}
+
+/* FILE VIEWING */
+p.author {
+    font-size: 10pt;
+}
+
+div.text {
+    margin-top: 30px;
+    margin-bottom: 30px;
 }

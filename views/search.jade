@@ -1,0 +1,25 @@
+extends ../node_modules/jade-bootstrap/_bootstrap
+
+block body
+    +navbar(title, "dropdown_menu")
+        +nav_item("/") Home
+        +nav_item("/browse?type=private_letters") Browse
+        +nav_item("/search", "active") Search
+
+    .container
+        form(action="/search", method="get")
+            input(type="text", name="searchString")
+            +submit("Search")
+
+        h1= "Search Results"
+
+        .container
+            if nResults > 0
+                +label-success(nResults + " results found.")
+            else
+                +label-info(nResults + " results found.")
+
+            p
+
+        .container
+            !{results}

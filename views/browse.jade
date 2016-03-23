@@ -1,0 +1,19 @@
+extends ../node_modules/jade-bootstrap/_bootstrap
+
+block body
+    +navbar(title, "dropdown_menu")
+        +nav_item("/") Home
+        +nav_item("/browse?type=private_letters", "active") Browse
+        +nav_item("/search") Search
+
+    .container
+        .navContainer
+            +nav-pills([{text:"Private Letters",href:"?type=private_letters"},
+                {text:"Newspaper Letters",href:"?type=newspaper_letters"},
+                {text:"Diaries",href:"?type=diary"},
+                {text:"Publications",href:"?type=publications"},
+                {text:"Judgements",href:"?type=judgements"}],
+            selected)
+
+    .container
+        !{results}

@@ -1,0 +1,24 @@
+extends ../node_modules/jade-bootstrap/_bootstrap
+
+block body
+    +navbar(title, "dropdown_menu")
+        +nav_item("/") Home
+        +nav_item("/browse?type=private_letters") Browse
+        +nav_item("/search") Search
+
+    .container
+        .container
+            h2= data.title
+
+            p.author
+                +icon("pencil")
+                &nbsp;&nbsp;&nbsp;Written by !{data.person}, dated !{data.date}
+
+            .text
+                !{data.text}
+
+            +accordion("sample")
+                +accordion-item-info("Source", "sample")
+                    !{data.source}
+
+                    p !{data.rawXML}
