@@ -4,7 +4,23 @@ block body
     +navbar(title, "dropdown_menu")
         +nav_item("/") Home
         +nav_item("/browse?type=private_letters") Browse
-        +nav_item("/search") Search
+        +nav_item("/search") Advanced Search
+        +nav_item("/add") Add Document
 
     .container
-        pre #{data}
+        span(class="btn btn-default btn-file" onclick="dl();") Download as XML file
+        p
+
+        script.
+            function dl() {
+                var t = document.getElementById('xml').textContent;
+                var a = document.createElement("a");
+                var f = new Blob([t], {type: "application/xml"});
+                a.href = URL.createObjectURL(f);
+                a.download = "#{xmlFilename}";
+                a.type = "submit";
+                a.click();
+                window.open(URL.createOjbectURL(f), "download");
+            }
+
+        pre#xml #{data}

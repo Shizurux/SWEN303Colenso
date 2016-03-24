@@ -1,0 +1,27 @@
+extends ../node_modules/jade-bootstrap/_bootstrap
+
+block body
+    +navbar(title, "dropdown_menu")
+        +nav_item("/") Home
+        +nav_item("/browse?type=private_letters") Browse
+        +nav_item("/search") Advanced Search
+        +nav_item("/add", "active") Add Document
+
+    .container
+        form(action='/add', method='post' enctype='multipart/form-data')
+            label XML Path
+
+            .form-inline
+                .form-group
+                    input(class="form-control" type="text" style="width:500px" name="directory" placeholder="e.g. Colenso/private_letters/")
+
+                .form-group
+                    label(class="btn btn-default btn-file") Choose file
+                        input(type='file' name="xmlFile" style="display:none;")
+
+                .form-group
+                    label(class="btn btn-success btn-file") Upload
+                        input(type='submit' style="display:none;")
+
+        br
+        p #{message}

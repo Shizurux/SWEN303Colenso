@@ -1,9 +1,12 @@
 var express = require('express');
 var router = express.Router();
+var multer = require('multer');
 
 var basex = require('basex');
 var client = new basex.Session("127.0.0.1", 1984, "admin", "admin");
 client.execute("OPEN Colenso");
+
+var fs = require('fs');
 
 /* GET home page. */
 router.get('/', function(req, res) {
@@ -49,7 +52,28 @@ router.get('/search', function(req, res) {
             }
             else {
                 var nResults = (result.result.match(/<\/a>/g) || []).length;
-                res.render('search', { title: 'The Colenso TEI Database', results: result.result, nResults: nResults });
+                res.render('search', { title: 'The Colenso TEI Database', results: result.result, nResults: nResults, customQuery: false });
+            }
+        }
+    );
+});
+
+router.get('/searchQuery', function(req, res) {
+    var query = "XQUERY declare default element namespace 'http://www.tei-c.org/ns/1.0';" + req.query.searchString;
+
+    client.execute(query,
+        function (error, result) {
+            if(error) {
+                console.error(error);
+            }
+            else {
+                var nResults = result.result.split(/\r\n|\r|\n/).length;
+
+                if (!result.result.replace(/^\s+|\s+$/g,"")) {
+                    nResults = 0;
+                }
+
+                res.render('search', { title: 'The Colenso TEI Database', results: result.result, nResults: nResults, customQuery: true });
             }
         }
     );
@@ -107,10 +131,46 @@ router.get('/rawXML', function(req, res) {
                 console.error(error);
             }
             else {
-                res.render('xml', { title: 'The Colenso TEI Database', data: result.result });
+                res.render('xml', { title: 'The Colenso TEI Database', data: result.result, xmlFilename: req.query.file.substring(req.query.file.lastIndexOf('/')+1) });
             }
         }
     );
+});
+
+var storage = multer.diskStorage({
+    destination: function (req, file, callback) {
+        callback(null, '../Colenso_TEIs/');
+    },
+    filename: function (req, file, callback) {
+        if (!fs.existsSync('../Colenso_TEIs/' + req.body.directory)){
+            fs.mkdirSync('../Colenso_TEIs/' + req.body.directory);
+        }
+
+        var extension = file.originalname.substring(file.originalname.lastIndexOf('.')+1);
+        if (extension != "xml") {
+            callback("Invalid file type (only .xml is allowed).", null);
+        }
+        else {
+            callback(null, req.body.directory + file.originalname);
+        }
+    }
+});
+
+var upload = multer({ storage : storage}).single('xmlFile');
+
+router.post('/add', function(req, res) {
+    upload(req, res, function(err) {
+        if(err) {
+            res.render('add', { title: 'The Colenso TEI Database', message: err })
+        }
+        else {
+            res.render('add', { title: 'The Colenso TEI Database', message: "File successfully uploaded." })
+        }
+    });
+});
+
+router.get('/add', function(req, res) {
+    res.render('add', { title: 'The Colenso TEI Database', message: ""  });
 });
 
 module.exports = router;

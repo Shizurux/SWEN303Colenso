@@ -6,6 +6,10 @@ div.navContainer {
     margin-bottom: 20px;
 }
 
+.form-group {
+    margin-right: 5px;
+}
+
 /* BROWSING */
 p.browse {
     font-size: 10pt;

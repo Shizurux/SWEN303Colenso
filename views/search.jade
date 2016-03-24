@@ -4,22 +4,55 @@ block body
     +navbar(title, "dropdown_menu")
         +nav_item("/") Home
         +nav_item("/browse?type=private_letters") Browse
-        +nav_item("/search", "active") Search
+        +nav_item("/search", "active") Advanced Search
+        +nav_item("/add") Add Document
+
+    script.
+        function toggleXQuery() {
+            if (document.getElementById("xquerySearchButton").className == "btn btn-default btn-info") {
+                document.getElementById("xquerySearchButton").className = "btn btn-default btn-info active";
+
+                document.getElementById("searchBox").placeholder = "Enter an XQuery or XPath query";
+                document.getElementById("searchForm").action = "/searchQuery";
+            }
+            else {
+                document.getElementById("xquerySearchButton").className = "btn btn-default btn-info";
+
+                document.getElementById("searchBox").placeholder = "Search titles";
+                document.getElementById("searchForm").action = "/search";
+            }
+        }
 
     .container
-        form(action="/search", method="get")
-            input(type="text", name="searchString")
-            +submit("Search")
+        form(class="form-inline" action="/search" id="searchForm" method="get")
+            input(class="form-control" style="width:100%" type="text" id="searchBox" name="searchString" placeholder="Search titles")
+            p
+            .form-inline
+                .form-group
+                    span(class="btn btn-default btn-info" id="xquerySearchButton" onclick="toggleXQuery();") Toggle XQUERY Search
+
+                +submit("Search")
 
         h1= "Search Results"
 
         .container
             if nResults > 0
-                +label-success(nResults + " results found.")
+                +label-success(nResults + " results found")
             else
-                +label-info(nResults + " results found.")
+                +label-danger(nResults + " results found")
 
             p
 
         .container
-            !{results}
+            if customQuery
+                if nResults > 0
+                    pre #{results}
+
+                script.
+                    document.getElementById("xquerySearchButton").className = "btn btn-default btn-info active";
+
+                    document.getElementById("searchBox").placeholder = "Enter an XQuery or XPath query";
+                    document.getElementById("searchForm").action = "/searchQuery";
+
+            else
+                !{results}
