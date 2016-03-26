@@ -18,14 +18,14 @@ block body
             else {
                 document.getElementById("xquerySearchButton").className = "btn btn-default btn-info";
 
-                document.getElementById("searchBox").placeholder = "Search titles";
+                document.getElementById("searchBox").placeholder = "Search documents";
                 document.getElementById("searchForm").action = "/search";
             }
         }
 
     .container
         form(class="form-inline" action="/search" id="searchForm" method="get")
-            input(class="form-control" style="width:100%" type="text" id="searchBox" name="searchString" placeholder="Search titles")
+            input(class="form-control" style="width:100%" type="text" id="searchBox" name="searchString" placeholder="Search documents")
             p
             .form-inline
                 .form-group
@@ -41,12 +41,15 @@ block body
             else
                 +label-danger(nResults + " results found")
 
-            p
+            span(class="btn btn-link") Download results as XML
+
+            br
+            br
 
         .container
             if customQuery
                 if nResults > 0
-                    pre #{results}
+                    !{results}
 
                 script.
                     document.getElementById("xquerySearchButton").className = "btn btn-default btn-info active";

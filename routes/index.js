@@ -40,8 +40,59 @@ router.get('/browse', function(req, res) {
 });
 
 router.get('/search', function(req, res) {
+    var andQuery = "'" + req.query.searchString + "'";
+
+    if (req.query.searchString) {
+        var queries = req.query.searchString.split("+");
+
+        andQuery = "";
+        for (var i = 0; i < queries.length; i++) {
+            andQuery += "'";
+            andQuery += queries[i].trim();
+            andQuery += "'";
+
+            if (i < queries.length - 1) {
+                andQuery += " and . contains text ";
+            }
+        }
+    }
+
     var query = "XQUERY declare default element namespace 'http://www.tei-c.org/ns/1.0';" +
-        "for $n in (//title[. contains text '" + req.query.searchString + "'])\n" +
+        "for $n in (//TEI[. contains text " + andQuery + "])\n" +
+        "return concat('<a href=\"/file?filename=', db:path($n), '\" class=\"searchResult\">', $n//title, '</a>'," +
+        "'<p class=\"searchResult\">', db:path($n), '</p>')";
+
+    client.execute(query,
+        function (error, result) {
+            if(error) {
+                console.error(error);
+            }
+            else {
+                if (req.query.searchString) {
+                    var nResults = (result.result.match(/<\/a>/g) || []).length;
+                    res.render('search', {
+                        title: 'The Colenso TEI Database',
+                        results: result.result,
+                        nResults: nResults,
+                        customQuery: false
+                    });
+                }
+                else {
+                    res.render('search', {
+                        title: 'The Colenso TEI Database',
+                        results: "",
+                        nResults: 0,
+                        customQuery: false
+                    });
+                }
+            }
+        }
+    );
+});
+
+router.get('/searchQuery', function(req, res) {
+    var query = "XQUERY declare default element namespace 'http://www.tei-c.org/ns/1.0';" +
+        "for $n in (" + req.query.searchString + ")\n" +
         "return concat('<a href=\"/file?filename=', db:path($n), '\" class=\"searchResult\">', $n, '</a>'," +
         "'<p class=\"searchResult\">', db:path($n), '</p>')";
 
@@ -52,27 +103,6 @@ router.get('/search', function(req, res) {
             }
             else {
                 var nResults = (result.result.match(/<\/a>/g) || []).length;
-                res.render('search', { title: 'The Colenso TEI Database', results: result.result, nResults: nResults, customQuery: false });
-            }
-        }
-    );
-});
-
-router.get('/searchQuery', function(req, res) {
-    var query = "XQUERY declare default element namespace 'http://www.tei-c.org/ns/1.0';" + req.query.searchString;
-
-    client.execute(query,
-        function (error, result) {
-            if(error) {
-                console.error(error);
-            }
-            else {
-                var nResults = result.result.split(/\r\n|\r|\n/).length;
-
-                if (!result.result.replace(/^\s+|\s+$/g,"")) {
-                    nResults = 0;
-                }
-
                 res.render('search', { title: 'The Colenso TEI Database', results: result.result, nResults: nResults, customQuery: true });
             }
         }
@@ -113,7 +143,12 @@ router.get('/file', function(req, res) {
                 text = text.replace("<text>", "");
                 text = text.replace("</text>", "");
 
-                var rawXML = "<a href='rawXML?file=" + req.query.filename + "'>View raw XML</a>";
+                text = text.split('type="entry"').join('class="well"');
+
+                text = text.split('rend="bold"').join('style="font-weight:bold;"');
+                text = text.split('rend="center"').join('style="text-align:center;"');
+
+                var rawXML = "<a href='rawXML?file=" + req.query.filename + "'>View/edit raw XML</a>";
 
                 var messageData = {title: title, person: person, date: date, source: source, text: text, rawXML: rawXML};
                 res.render('file', { title: 'The Colenso TEI Database', data: messageData });

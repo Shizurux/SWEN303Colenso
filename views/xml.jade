@@ -8,7 +8,10 @@ block body
         +nav_item("/add") Add Document
 
     .container
-        span(class="btn btn-default btn-file" onclick="dl();") Download as XML file
+        p
+            span(class="btn btn-default btn-file" onclick="save();") Save
+            &nbsp;&nbsp;&nbsp;
+            span(class="btn btn-default btn-file" onclick="dl();") Download as XML file
         p
 
         script.
@@ -23,4 +26,9 @@ block body
                 window.open(URL.createOjbectURL(f), "download");
             }
 
-        pre#xml #{data}
+            function save() {
+
+            }
+
+        textarea(class="form-control" rows="40" style="width:100%; font-family: Consolas, 'Courier New'; font-size:10pt;" id="xml") #{data}
+        br
