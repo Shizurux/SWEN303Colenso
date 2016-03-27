@@ -40,27 +40,61 @@ router.get('/browse', function(req, res) {
 });
 
 router.get('/search', function(req, res) {
-    var andQuery = "'" + req.query.searchString + "'";
+    var search = req.query.searchString;
 
     if (req.query.searchString) {
-        var queries = req.query.searchString.split("+");
+        var searchTokens = [];
 
-        andQuery = "";
-        for (var i = 0; i < queries.length; i++) {
-            andQuery += "'";
-            andQuery += queries[i].trim();
-            andQuery += "'";
-
-            if (i < queries.length - 1) {
-                andQuery += " and . contains text ";
+        var currentWord = "";
+        for (var i = 0; i < search.length; i++) {
+            if (search.charAt(i) == '+') {
+                searchTokens.push(currentWord);
+                currentWord = "";
+                searchTokens.push('+');
             }
+            else if (search.charAt(i) == '|') {
+                searchTokens.push(currentWord);
+                currentWord = "";
+                searchTokens.push('|');
+            }
+            else if (search.charAt(i) == '-') {
+                searchTokens.push(currentWord);
+                currentWord = "-";
+            }
+            else {
+                currentWord += search.charAt(i);
+            }
+        }
+        searchTokens.push(currentWord);
+
+        for (var i = 0; i < searchTokens.length; i++) {
+            searchTokens[i] = searchTokens[i].trim();
+            if (searchTokens[i] == '+') {
+                searchTokens[i] = 'and';
+            }
+            else if (searchTokens[i] == '|') {
+                searchTokens[i] = 'or';
+            }
+            else {
+                if (searchTokens[i][0] == '-') {
+                    searchTokens[i] = "and not(. contains text '" + searchTokens[i].substr(1, searchTokens[i].length) + "')";
+                }
+                else {
+                    searchTokens[i] = ". contains text '" + searchTokens[i] + "'";
+                }
+            }
+        }
+
+        search = "";
+        for (var i = 0; i < searchTokens.length; i++) {
+            search += searchTokens[i] + " ";
         }
     }
 
     var query = "XQUERY declare default element namespace 'http://www.tei-c.org/ns/1.0';" +
-        "for $n in (//TEI[. contains text " + andQuery + "])\n" +
-        "return concat('<a href=\"/file?filename=', db:path($n), '\" class=\"searchResult\">', $n//title, '</a>'," +
-        "'<p class=\"searchResult\">', db:path($n), '</p>')";
+        "for $n in (//TEI[" + search + "])\n" +
+        "return concat('<div class=\"well\"><a href=\"/file?filename=', db:path($n), '\" class=\"searchResult\">', $n//title, '</a>'," +
+        "'<p class=\"searchResult\">', db:path($n), ' (<b>', string(string-length($n) div 1000), ' kB</b>)</p></div>')";
 
     client.execute(query,
         function (error, result) {
@@ -74,7 +108,8 @@ router.get('/search', function(req, res) {
                         title: 'The Colenso TEI Database',
                         results: result.result,
                         nResults: nResults,
-                        customQuery: false
+                        customQuery: false,
+                        originalSearch: search
                     });
                 }
                 else {
@@ -82,7 +117,8 @@ router.get('/search', function(req, res) {
                         title: 'The Colenso TEI Database',
                         results: "",
                         nResults: 0,
-                        customQuery: false
+                        customQuery: false,
+                        originalSearch: search
                     });
                 }
             }
@@ -93,8 +129,8 @@ router.get('/search', function(req, res) {
 router.get('/searchQuery', function(req, res) {
     var query = "XQUERY declare default element namespace 'http://www.tei-c.org/ns/1.0';" +
         "for $n in (" + req.query.searchString + ")\n" +
-        "return concat('<a href=\"/file?filename=', db:path($n), '\" class=\"searchResult\">', $n, '</a>'," +
-        "'<p class=\"searchResult\">', db:path($n), '</p>')";
+        "return concat('<div class=\"well\"><a href=\"/file?filename=', db:path($n), '\" class=\"searchResult\">', $n, '</a>'," +
+        "'<p class=\"searchResult\">', db:path($n), ' (<b>', string(string-length($n) div 1000), ' kB</b>)</p></div>')";
 
     client.execute(query,
         function (error, result) {
@@ -103,7 +139,25 @@ router.get('/searchQuery', function(req, res) {
             }
             else {
                 var nResults = (result.result.match(/<\/a>/g) || []).length;
-                res.render('search', { title: 'The Colenso TEI Database', results: result.result, nResults: nResults, customQuery: true });
+                res.render('search', { title: 'The Colenso TEI Database', results: result.result, nResults: nResults, customQuery: true, originalSearch: req.query.searchString });
+            }
+        }
+    );
+});
+
+router.get('/downloadXML', function(req, res) {
+    var query = "XQUERY declare default element namespace 'http://www.tei-c.org/ns/1.0';" +
+        "for $n in (//TEI[" + req.query.xml + "])\n" +
+        "return doc(concat('Colenso/', db:path($n)))";
+
+    client.execute(query,
+        function (error, result) {
+            if(error) {
+                console.error(error);
+            }
+            else {
+                var nResults = (result.result.match(/<\/a>/g) || []).length;
+                res.render('xml', { title: 'The Colenso TEI Database', data: result.result, xmlFilename: "customXMLsearch.xml", showSaveBtn: false });
             }
         }
     );
@@ -166,7 +220,7 @@ router.get('/rawXML', function(req, res) {
                 console.error(error);
             }
             else {
-                res.render('xml', { title: 'The Colenso TEI Database', data: result.result, xmlFilename: req.query.file.substring(req.query.file.lastIndexOf('/')+1) });
+                res.render('xml', { title: 'The Colenso TEI Database', data: result.result, xmlFilename: req.query.file.substring(req.query.file.lastIndexOf('/')+1), showSaveBtn: true });
             }
         }
     );

@@ -38,10 +38,9 @@ block body
         .container
             if nResults > 0
                 +label-success(nResults + " results found")
+                a(class="btn btn-link" href="/downloadXML?xml=#{originalSearch}") Download results as XML
             else
                 +label-danger(nResults + " results found")
-
-            span(class="btn btn-link") Download results as XML
 
             br
             br
@@ -59,3 +58,6 @@ block body
 
             else
                 !{results}
+
+            br
+            br
