@@ -14,22 +14,63 @@ block body
 
                 document.getElementById("searchBox").placeholder = "Enter an XQuery or XPath query";
                 document.getElementById("searchForm").action = "/searchQuery";
+
+                document.getElementById("searchResultsButton").className = "btn btn-default btn-info disabled";
             }
             else {
                 document.getElementById("xquerySearchButton").className = "btn btn-default btn-info";
 
                 document.getElementById("searchBox").placeholder = "Search documents";
                 document.getElementById("searchForm").action = "/search";
+
+                document.getElementById("searchResultsButton").className = "btn btn-default btn-info";
+            }
+        }
+
+        function toggleSearchResults() {
+            if (document.getElementById("searchResultsButton").className == "btn btn-default btn-info") {
+                document.getElementById("searchResultsButton").className = "btn btn-default btn-info active";
+
+                document.getElementById("searchBox").placeholder = "Search results";
+                document.getElementById("searchForm").action = "/searchResults";
+
+                document.getElementById("xquerySearchButton").className = "btn btn-default btn-info disabled";
+            }
+            else {
+                document.getElementById("searchResultsButton").className = "btn btn-default btn-info";
+
+                document.getElementById("searchBox").placeholder = "Search documents";
+                document.getElementById("searchForm").action = "/search";
+
+                document.getElementById("xquerySearchButton").className = "btn btn-default btn-info";
+            }
+        }
+
+        function toggleSearchHistory() {
+            if (document.getElementById("searchHistoryDiv").style.display == "none") {
+                document.getElementById("searchHistoryDiv").style.display = "block";
+            }
+            else {
+                document.getElementById("searchHistoryDiv").style.display = "none";
             }
         }
 
     .container
+        span(class="btn btn-link" onclick="toggleSearchHistory();" style="font-size: 11px;") Toggle search history
+
+        div(id="searchHistoryDiv" style="display:none;")
+            div.well
+                !{searchHistory}
+
         form(class="form-inline" action="/search" id="searchForm" method="get")
             input(class="form-control" style="width:100%" type="text" id="searchBox" name="searchString" placeholder="Search documents")
             p
             .form-inline
                 .form-group
                     span(class="btn btn-default btn-info" id="xquerySearchButton" onclick="toggleXQuery();") Toggle XQUERY Search
+
+                .form-group
+                    span(class="btn btn-default btn-info" id="searchResultsButton" onclick="toggleSearchResults();") Toggle Search in Results
 
                 +submit("Search")
 

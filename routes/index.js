@@ -8,6 +8,12 @@ client.execute("OPEN Colenso");
 
 var fs = require('fs');
 
+var searchHistory = [];
+var searchHistoryCounts = {};
+var searchHistoryType = {};
+
+var lastSearch = "";
+
 /* GET home page. */
 router.get('/', function(req, res) {
     res.render('index', { title: 'The Colenso TEI Database' });
@@ -43,6 +49,15 @@ router.get('/search', function(req, res) {
     var search = req.query.searchString;
 
     if (req.query.searchString) {
+        if (searchHistoryCounts[req.query.searchString]) {
+            searchHistoryCounts[req.query.searchString] += 1;
+        }
+        else {
+            searchHistory.push(req.query.searchString);
+            searchHistoryType[req.query.searchString] = "normal";
+            searchHistoryCounts[req.query.searchString] = 1;
+        }
+
         var searchTokens = [];
 
         var currentWord = "";
@@ -94,7 +109,7 @@ router.get('/search', function(req, res) {
     var query = "XQUERY declare default element namespace 'http://www.tei-c.org/ns/1.0';" +
         "for $n in (//TEI[" + search + "])\n" +
         "return concat('<div class=\"well\"><a href=\"/file?filename=', db:path($n), '\" class=\"searchResult\">', $n//title, '</a>'," +
-        "'<p class=\"searchResult\">', db:path($n), ' (<b>', string(string-length($n) div 1000), ' kB</b>)</p></div>')";
+        "'<p class=\"searchResult\">', db:path($n), ' (<b>', string(string-length($n) div 1000), ' kB</b>) <a href=\"/rawXML?file=', db:path($n), '\">View/edit raw XML</a></p></div>')";
 
     client.execute(query,
         function (error, result) {
@@ -102,14 +117,34 @@ router.get('/search', function(req, res) {
                 console.error(error);
             }
             else {
+                searchHistory2 = [];
+                for (var i = 0; i < searchHistory.length; i++) {
+                    var str = "";
+
+                    if (searchHistoryType[searchHistory[i]] == "normal") {
+                        str += " <a href='/search?searchString=" + searchHistory[i] + "'>" + searchHistory[i] + "</a>";
+                    }
+                    else {
+                        str += " <a href='/searchQuery?searchString=" + searchHistory[i] + "'>" + searchHistory[i] + "</a>";
+                    }
+
+                    str += ": ";
+                    str += searchHistoryCounts[searchHistory[i]].toString();
+
+                    searchHistory2.push(str);
+                }
+
+                lastSearch = result.result;
+
                 if (req.query.searchString) {
-                    var nResults = (result.result.match(/<\/a>/g) || []).length;
+                    var nResults = (result.result.match(/<\/div>/g) || []).length;
                     res.render('search', {
                         title: 'The Colenso TEI Database',
                         results: result.result,
                         nResults: nResults,
                         customQuery: false,
-                        originalSearch: search
+                        originalSearch: search,
+                        searchHistory: searchHistory2
                     });
                 }
                 else {
@@ -118,7 +153,8 @@ router.get('/search', function(req, res) {
                         results: "",
                         nResults: 0,
                         customQuery: false,
-                        originalSearch: search
+                        originalSearch: search,
+                        searchHistory: searchHistory2
                     });
                 }
             }
@@ -127,10 +163,21 @@ router.get('/search', function(req, res) {
 });
 
 router.get('/searchQuery', function(req, res) {
+    if (searchHistoryCounts[req.query.searchString]) {
+        searchHistoryCounts[req.query.searchString] += 1;
+    }
+    else {
+        searchHistory.push(req.query.searchString);
+        searchHistoryType[req.query.searchString] = "xquery";
+        searchHistoryCounts[req.query.searchString] = 1;
+    }
+
     var query = "XQUERY declare default element namespace 'http://www.tei-c.org/ns/1.0';" +
         "for $n in (" + req.query.searchString + ")\n" +
         "return concat('<div class=\"well\"><a href=\"/file?filename=', db:path($n), '\" class=\"searchResult\">', $n, '</a>'," +
-        "'<p class=\"searchResult\">', db:path($n), ' (<b>', string(string-length($n) div 1000), ' kB</b>)</p></div>')";
+        "'<p class=\"searchResult\">', db:path($n), ' (<b>', string(string-length($n) div 1000), ' kB</b>) <a href=\"/rawXML?file=', db:path($n), '\">View/edit raw XML</a></p></div>')";
+
+    lastSearch = query;
 
     client.execute(query,
         function (error, result) {
@@ -138,11 +185,78 @@ router.get('/searchQuery', function(req, res) {
                 console.error(error);
             }
             else {
-                var nResults = (result.result.match(/<\/a>/g) || []).length;
-                res.render('search', { title: 'The Colenso TEI Database', results: result.result, nResults: nResults, customQuery: true, originalSearch: req.query.searchString });
+                searchHistory2 = [];
+                for (var i = 0; i < searchHistory.length; i++) {
+                    var str = "";
+
+                    if (searchHistoryType[searchHistory[i]] == "normal") {
+                        str += " <a href='/search?searchString=" + searchHistory[i] + "'>" + searchHistory[i] + "</a>";
+                    }
+                    else {
+                        str += " <a href='/searchQuery?searchString=" + searchHistory[i] + "'>" + searchHistory[i] + "</a>";
+                    }
+
+                    str += ": ";
+                    str += searchHistoryCounts[searchHistory[i]].toString();
+
+                    searchHistory2.push(str);
+                }
+
+                var nResults = (result.result.match(/<\/div>/g) || []).length;
+                res.render('search', {
+                    title: 'The Colenso TEI Database',
+                    results: result.result,
+                    nResults: nResults,
+                    customQuery: true,
+                    originalSearch: req.query.searchString,
+                    searchHistory: searchHistory2
+                });
             }
         }
     );
+});
+
+router.get('/searchResults', function(req, res) {
+    searchHistory2 = [];
+    for (var i = 0; i < searchHistory.length; i++) {
+        var str = "";
+
+        if (searchHistoryType[searchHistory[i]] == "normal") {
+            str += " <a href='/search?searchString=" + searchHistory[i] + "'>" + searchHistory[i] + "</a>";
+        }
+        else {
+            str += " <a href='/searchQuery?searchString=" + searchHistory[i] + "'>" + searchHistory[i] + "</a>";
+        }
+
+        str += ": ";
+        str += searchHistoryCounts[searchHistory[i]].toString();
+
+        searchHistory2.push(str);
+    }
+
+    var returnStr = "";
+    var resultsTokens = lastSearch.split("</div>");
+    for (var i = 0; i < resultsTokens.length; i++) {
+        resultsTokens[i] += "</div>";
+    }
+
+    for (var i = 0; i < resultsTokens.length; i++) {
+        if (resultsTokens[i].toLowerCase().indexOf(req.query.searchString.toLowerCase()) >= 0) {
+            returnStr += resultsTokens[i];
+        }
+    }
+
+    lastSearch = returnStr;
+    var nResults = (returnStr.match(/<\/div>/g) || []).length;
+
+    res.render('search', {
+        title: 'The Colenso TEI Database',
+        results: returnStr,
+        nResults: nResults,
+        customQuery: false,
+        originalSearch: req.query.searchString,
+        searchHistory: searchHistory2
+    });
 });
 
 router.get('/downloadXML', function(req, res) {
@@ -180,10 +294,16 @@ router.get('/file', function(req, res) {
                 title = title.replace("<title>", "");
                 title = title.replace("</title>", "");
 
-                var person = result.result.match(/<author>[\s\S]*?<\/author>/)[0];
-                person = person.replace("<name", "<a");
-                person = person.replace("key=", "href=");
-                person = person.replace("</name>", "</a>");
+                var person = "";
+                if (result.result.match(/<author>[\s\S]*?<\/author>/)) {
+                    person = result.result.match(/<author>[\s\S]*?<\/author>/)[0];
+                    person = person.replace("<name", "<a");
+                    person = person.replace("key=", "href=");
+                    person = person.replace("</name>", "</a>");
+                }
+                else {
+                    person = "Unknown";
+                }
 
                 var date = result.result.match(/<date[\s\S]*?<\/date>/)[0];
                 date = date.replace("<date", "<b");
@@ -216,31 +336,87 @@ router.get('/rawXML', function(req, res) {
 
     client.execute(query,
         function (error, result) {
-            if(error) {
+            if (error) {
                 console.error(error);
             }
             else {
-                res.render('xml', { title: 'The Colenso TEI Database', data: result.result, xmlFilename: req.query.file.substring(req.query.file.lastIndexOf('/')+1), showSaveBtn: true });
+                res.render('xml', {
+                    title: 'The Colenso TEI Database',
+                    xmlPath: req.query.file,
+                    data: result.result,
+                    xmlFilename: req.query.file.substring(req.query.file.lastIndexOf('/') + 1),
+                    showSaveBtn: true
+                });
             }
         }
     );
 });
+
+router.get('/saveXML', function(req, res) {
+    var query = "REPLACE " + req.query.file + " " + unescape(req.query.data);
+
+    client.execute(query,
+        function (error, result) {
+            if (error) {
+                res.render('xml', {
+                    title: 'The Colenso TEI Database',
+                    xmlPath: req.query.file,
+                    data: unescape(req.query.data),
+                    xmlFilename: req.query.file.substring(req.query.file.lastIndexOf('/') + 1),
+                    showSaveBtn: true,
+                    error: error
+                });
+            }
+            else {
+                client.execute("EXPORT Colenso_TEIs/",
+                    function (error, result) {
+                        if (error) {
+                            console.error(error);
+                        }
+                        else {
+                            var query = "XQUERY doc('Colenso/" + req.query.file + "')";
+
+                            client.execute(query,
+                                function (error, result) {
+                                    if (error) {
+                                        console.error(error);
+                                    }
+                                    else {
+                                        res.render('xml', {
+                                            title: 'The Colenso TEI Database',
+                                            xmlPath: req.query.file,
+                                            data: result.result,
+                                            xmlFilename: req.query.file.substring(req.query.file.lastIndexOf('/') + 1),
+                                            showSaveBtn: true
+                                        });
+                                    }
+                                }
+                            );
+                        }
+                    }
+                );
+            }
+        }
+    );
+});
+
+var fileNameGlobal = "";
+var directoryGlobal = "";
 
 var storage = multer.diskStorage({
     destination: function (req, file, callback) {
         callback(null, '../Colenso_TEIs/');
     },
     filename: function (req, file, callback) {
-        if (!fs.existsSync('../Colenso_TEIs/' + req.body.directory)){
-            fs.mkdirSync('../Colenso_TEIs/' + req.body.directory);
-        }
+        directoryGlobal = req.body.directory;
 
         var extension = file.originalname.substring(file.originalname.lastIndexOf('.')+1);
         if (extension != "xml") {
             callback("Invalid file type (only .xml is allowed).", null);
         }
         else {
-            callback(null, req.body.directory + file.originalname);
+            fileNameGlobal = file.originalname;
+            callback(null, directoryGlobal + file.originalname);
         }
     }
 });
@@ -253,6 +429,14 @@ router.post('/add', function(req, res) {
             res.render('add', { title: 'The Colenso TEI Database', message: err })
         }
         else {
+            client.execute("ADD TO " + directoryGlobal + fileNameGlobal + " Colenso_TEIs/" + directoryGlobal + fileNameGlobal, function(err, res) {
+                if (err) {
+                    console.log(err);
+                }
+                else {
+                    console.log(res);
+                }
+            });
             res.render('add', { title: 'The Colenso TEI Database', message: "File successfully uploaded." })
         }
     });

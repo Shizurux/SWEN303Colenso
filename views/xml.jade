@@ -8,11 +8,16 @@ block body
         +nav_item("/add") Add Document
 
     .container
+        if error
+            +alert-ix-danger(error)
+
         p
             if showSaveBtn
-                span(class="btn btn-default btn-file disabled" onclick="save();") Save
+                span(class="btn btn-default btn-file btn-success" onclick="save();") Save
                 &nbsp;&nbsp;&nbsp;
-            span(class="btn btn-default btn-file" onclick="dl();") Download as XML file
+            span(class="btn btn-default btn-file btn-info" onclick="dl();") Download as XML file
+            &nbsp;&nbsp;&nbsp;
+            a(class="btn btn-default btn-file btn-warning btn-xs" href="/rawXML?file=#{xmlPath}") Reset
         p
 
         script.
@@ -28,11 +33,11 @@ block body
             }
 
             function save() {
-
+                window.location.href = "/saveXML?file=#{xmlPath}&data=" + escape(document.getElementById("xml").value);
             }
 
         if showSaveBtn
             textarea(class="form-control" rows="40" style="width:100%; font-family: Consolas, 'Courier New'; font-size:10pt;" id="xml") #{data}
         else
-            pre(style="font-family: Consolas, 'Courier New'; font-size:10pt;" id="xml") #{data}
+            pre(style="font-family: Consolas, 'Courier New'; font-size:10pt;") #{data}
         br

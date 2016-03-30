@@ -8,13 +8,15 @@ block body
 		+nav_item("/add") Add Document
 	
 	.container
-		h1= title
-		
-		.container
-			p Welcome to #{title}.
+		center
+			.container
+				h3 Welcome to #{title}.
 
-		.container
-			form(class="form-inline" action="/search", method="get")
-				input(class="form-control" style="width:100%" type="text", name="searchString" placeholder="Search titles")
-				p
-				+submit("Search")
+			.container
+				p #[i Printer of some of the most significant documents in New Zealand history, missionary, explorer and botanist, a free wheeling politician and controversialist – William Colenso was a maverick.]
+
+			.container
+				form(class="form-inline" action="/search", method="get")
+					input(class="form-control" style="width:100%" type="text", name="searchString" placeholder="Search documents")
+					p
+					+submit("Search")
